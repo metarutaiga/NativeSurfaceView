@@ -28,12 +28,12 @@ import java.io.Writer;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 
-import javax.microedition.khronos.egl.EGL10;
-import javax.microedition.khronos.egl.EGL11;
-import javax.microedition.khronos.egl.EGLConfig;
-import javax.microedition.khronos.egl.EGLContext;
-import javax.microedition.khronos.egl.EGLDisplay;
-import javax.microedition.khronos.egl.EGLSurface;
+import javax.microedition.khronos.API.API10;
+import javax.microedition.khronos.API.API11;
+import javax.microedition.khronos.API.APIConfig;
+import javax.microedition.khronos.API.APIContext;
+import javax.microedition.khronos.API.APIDisplay;
+import javax.microedition.khronos.API.APISurface;
 import javax.microedition.khronos.opengles.GL;
 import javax.microedition.khronos.opengles.GL10;
 
@@ -46,7 +46,7 @@ import javax.microedition.khronos.opengles.GL10;
  * <ul>
  * <li>Manages a surface, which is a special piece of memory that can be
  * composited into the Android view system.
- * <li>Manages an EGL display, which enables OpenGL to render into a surface.
+ * <li>Manages an API display, which enables OpenGL to render into a surface.
  * <li>Accepts a user-provided Renderer object that does the actual rendering.
  * <li>Renders on a dedicated thread to decouple rendering performance from the
  * UI thread.
@@ -76,9 +76,9 @@ import javax.microedition.khronos.opengles.GL10;
  * more of these methods before calling setRenderer:
  * <ul>
  * <li>{@link #setDebugFlags(int)}
- * <li>{@link #setEGLConfigChooser(boolean)}
- * <li>{@link #setEGLConfigChooser(EGLConfigChooser)}
- * <li>{@link #setEGLConfigChooser(int, int, int, int, int, int)}
+ * <li>{@link #setAPIConfigChooser(boolean)}
+ * <li>{@link #setAPIConfigChooser(APIConfigChooser)}
+ * <li>{@link #setAPIConfigChooser(int, int, int, int, int, int)}
  * <li>{@link #setGLWrapper(GLWrapper)}
  * </ul>
  * <p>
@@ -88,18 +88,18 @@ import javax.microedition.khronos.opengles.GL10;
  * The exact format of a TRANSLUCENT surface is device dependent, but it will be
  * a 32-bit-per-pixel surface with 8 bits per component.
  * <p>
- * <h4>Choosing an EGL Configuration</h4>
- * A given Android device may support multiple EGLConfig rendering configurations.
+ * <h4>Choosing an API Configuration</h4>
+ * A given Android device may support multiple APIConfig rendering configurations.
  * The available configurations may differ in how many channels of data are present, as
  * well as how many bits are allocated to each channel. Therefore, the first thing
- * NativeSurfaceView has to do when starting to render is choose what EGLConfig to use.
+ * NativeSurfaceView has to do when starting to render is choose what APIConfig to use.
  * <p>
- * By default NativeSurfaceView chooses a EGLConfig that has an RGB_888 pixel format,
+ * By default NativeSurfaceView chooses a APIConfig that has an RGB_888 pixel format,
  * with at least a 16-bit depth buffer and no stencil.
  * <p>
- * If you would prefer a different EGLConfig
+ * If you would prefer a different APIConfig
  * you can override the default behavior by calling one of the
- * setEGLConfigChooser methods.
+ * setAPIConfigChooser methods.
  * <p>
  * <h4>Debug Behavior</h4>
  * You can optionally modify the behavior of NativeSurfaceView by calling
@@ -168,7 +168,7 @@ public class NativeSurfaceView extends SurfaceView implements SurfaceHolder.Call
     private final static boolean LOG_SURFACE = false;
     private final static boolean LOG_RENDERER = false;
     private final static boolean LOG_RENDERER_DRAW_FRAME = false;
-    private final static boolean LOG_EGL = false;
+    private final static boolean LOG_API = false;
     /**
      * The renderer only renders
      * when the surface is created, or when {@link #requestRender} is called.
@@ -289,34 +289,34 @@ public class NativeSurfaceView extends SurfaceView implements SurfaceHolder.Call
     }
 
     /**
-     * Control whether the EGL context is preserved when the NativeSurfaceView is paused and
+     * Control whether the API context is preserved when the NativeSurfaceView is paused and
      * resumed.
      * <p>
-     * If set to true, then the EGL context may be preserved when the NativeSurfaceView is paused.
+     * If set to true, then the API context may be preserved when the NativeSurfaceView is paused.
      * <p>
-     * Prior to API level 11, whether the EGL context is actually preserved or not
+     * Prior to API level 11, whether the API context is actually preserved or not
      * depends upon whether the Android device can support an arbitrary number of
-     * EGL contexts or not. Devices that can only support a limited number of EGL
-     * contexts must release the EGL context in order to allow multiple applications
+     * API contexts or not. Devices that can only support a limited number of API
+     * contexts must release the API context in order to allow multiple applications
      * to share the GPU.
      * <p>
-     * If set to false, the EGL context will be released when the NativeSurfaceView is paused,
+     * If set to false, the API context will be released when the NativeSurfaceView is paused,
      * and recreated when the NativeSurfaceView is resumed.
      * <p>
      *
      * The default is false.
      *
-     * @param preserveOnPause preserve the EGL context when paused
+     * @param preserveOnPause preserve the API context when paused
      */
-    public void setPreserveEGLContextOnPause(boolean preserveOnPause) {
-        mPreserveEGLContextOnPause = preserveOnPause;
+    public void setPreserveAPIContextOnPause(boolean preserveOnPause) {
+        mPreserveAPIContextOnPause = preserveOnPause;
     }
 
     /**
-     * @return true if the EGL context will be preserved when paused
+     * @return true if the API context will be preserved when paused
      */
-    public boolean getPreserveEGLContextOnPause() {
-        return mPreserveEGLContextOnPause;
+    public boolean getPreserveAPIContextOnPause() {
+        return mPreserveAPIContextOnPause;
     }
 
     /**
@@ -327,9 +327,9 @@ public class NativeSurfaceView extends SurfaceView implements SurfaceHolder.Call
      * <p>The following NativeSurfaceView methods can only be called <em>before</em>
      * setRenderer is called:
      * <ul>
-     * <li>{@link #setEGLConfigChooser(boolean)}
-     * <li>{@link #setEGLConfigChooser(EGLConfigChooser)}
-     * <li>{@link #setEGLConfigChooser(int, int, int, int, int, int)}
+     * <li>{@link #setAPIConfigChooser(boolean)}
+     * <li>{@link #setAPIConfigChooser(APIConfigChooser)}
+     * <li>{@link #setAPIConfigChooser(int, int, int, int, int, int)}
      * </ul>
      * <p>
      * The following NativeSurfaceView methods can only be called <em>after</em>
@@ -347,14 +347,14 @@ public class NativeSurfaceView extends SurfaceView implements SurfaceHolder.Call
      */
     public void setRenderer(Renderer renderer) {
         checkRenderThreadState();
-        if (mEGLConfigChooser == null) {
-            mEGLConfigChooser = new SimpleEGLConfigChooser(true);
+        if (mAPIConfigChooser == null) {
+            mAPIConfigChooser = new SimpleAPIConfigChooser(true);
         }
-        if (mEGLContextFactory == null) {
-            mEGLContextFactory = new DefaultContextFactory();
+        if (mAPIContextFactory == null) {
+            mAPIContextFactory = new DefaultContextFactory();
         }
-        if (mEGLWindowSurfaceFactory == null) {
-            mEGLWindowSurfaceFactory = new DefaultWindowSurfaceFactory();
+        if (mAPIWindowSurfaceFactory == null) {
+            mAPIWindowSurfaceFactory = new DefaultWindowSurfaceFactory();
         }
         mRenderer = renderer;
         mRenderThread = new RenderThread(mThisWeakRef);
@@ -362,7 +362,7 @@ public class NativeSurfaceView extends SurfaceView implements SurfaceHolder.Call
     }
 
     /**
-     * Install a custom EGLContextFactory.
+     * Install a custom APIContextFactory.
      * <p>If this method is
      * called, it must be called before {@link #setRenderer(Renderer)}
      * is called.
@@ -371,13 +371,13 @@ public class NativeSurfaceView extends SurfaceView implements SurfaceHolder.Call
      * a context will be created with no shared context and
      * with a null attribute list.
      */
-    public void setEGLContextFactory(EGLContextFactory factory) {
+    public void setAPIContextFactory(APIContextFactory factory) {
         checkRenderThreadState();
-        mEGLContextFactory = factory;
+        mAPIContextFactory = factory;
     }
 
     /**
-     * Install a custom EGLWindowSurfaceFactory.
+     * Install a custom APIWindowSurfaceFactory.
      * <p>If this method is
      * called, it must be called before {@link #setRenderer(Renderer)}
      * is called.
@@ -385,26 +385,26 @@ public class NativeSurfaceView extends SurfaceView implements SurfaceHolder.Call
      * If this method is not called, then by default
      * a window surface will be created with a null attribute list.
      */
-    public void setEGLWindowSurfaceFactory(EGLWindowSurfaceFactory factory) {
+    public void setAPIWindowSurfaceFactory(APIWindowSurfaceFactory factory) {
         checkRenderThreadState();
-        mEGLWindowSurfaceFactory = factory;
+        mAPIWindowSurfaceFactory = factory;
     }
 
     /**
-     * Install a custom EGLConfigChooser.
+     * Install a custom APIConfigChooser.
      * <p>If this method is
      * called, it must be called before {@link #setRenderer(Renderer)}
      * is called.
      * <p>
-     * If no setEGLConfigChooser method is called, then by default the
-     * view will choose an EGLConfig that is compatible with the current
+     * If no setAPIConfigChooser method is called, then by default the
+     * view will choose an APIConfig that is compatible with the current
      * android.view.Surface, with a depth buffer depth of
      * at least 16 bits.
      * @param configChooser
      */
-    public void setEGLConfigChooser(EGLConfigChooser configChooser) {
+    public void setAPIConfigChooser(APIConfigChooser configChooser) {
         checkRenderThreadState();
-        mEGLConfigChooser = configChooser;
+        mAPIConfigChooser = configChooser;
     }
 
     /**
@@ -415,14 +415,14 @@ public class NativeSurfaceView extends SurfaceView implements SurfaceHolder.Call
      * called, it must be called before {@link #setRenderer(Renderer)}
      * is called.
      * <p>
-     * If no setEGLConfigChooser method is called, then by default the
+     * If no setAPIConfigChooser method is called, then by default the
      * view will choose an RGB_888 surface with a depth buffer depth of
      * at least 16 bits.
      *
      * @param needDepth
      */
-    public void setEGLConfigChooser(boolean needDepth) {
-        setEGLConfigChooser(new SimpleEGLConfigChooser(needDepth));
+    public void setAPIConfigChooser(boolean needDepth) {
+        setAPIConfigChooser(new SimpleAPIConfigChooser(needDepth));
     }
 
     /**
@@ -433,26 +433,26 @@ public class NativeSurfaceView extends SurfaceView implements SurfaceHolder.Call
      * called, it must be called before {@link #setRenderer(Renderer)}
      * is called.
      * <p>
-     * If no setEGLConfigChooser method is called, then by default the
+     * If no setAPIConfigChooser method is called, then by default the
      * view will choose an RGB_888 surface with a depth buffer depth of
      * at least 16 bits.
      *
      */
-    public void setEGLConfigChooser(int redSize, int greenSize, int blueSize,
+    public void setAPIConfigChooser(int redSize, int greenSize, int blueSize,
             int alphaSize, int depthSize, int stencilSize) {
-        setEGLConfigChooser(new ComponentSizeChooser(redSize, greenSize,
+        setAPIConfigChooser(new ComponentSizeChooser(redSize, greenSize,
                 blueSize, alphaSize, depthSize, stencilSize));
     }
 
     /**
-     * Inform the default EGLContextFactory and default EGLConfigChooser
-     * which EGLContext client version to pick.
+     * Inform the default APIContextFactory and default APIConfigChooser
+     * which APIContext client version to pick.
      * <p>Use this method to create an OpenGL ES 2.0-compatible context.
      * Example:
      * <pre class="prettyprint">
      *     public MyView(Context context) {
      *         super(context);
-     *         setEGLContextClientVersion(2); // Pick an OpenGL ES 2.0 context.
+     *         setAPIContextClientVersion(2); // Pick an OpenGL ES 2.0 context.
      *         setRenderer(new MyRenderer());
      *     }
      * </pre>
@@ -461,18 +461,18 @@ public class NativeSurfaceView extends SurfaceView implements SurfaceHolder.Call
      * AndroidManifest.xml file.
      * <p>If this method is called, it must be called before {@link #setRenderer(Renderer)}
      * is called.
-     * <p>This method only affects the behavior of the default EGLContexFactory and the
-     * default EGLConfigChooser. If
-     * {@link #setEGLContextFactory(EGLContextFactory)} has been called, then the supplied
-     * EGLContextFactory is responsible for creating an OpenGL ES 2.0-compatible context.
+     * <p>This method only affects the behavior of the default APIContexFactory and the
+     * default APIConfigChooser. If
+     * {@link #setAPIContextFactory(APIContextFactory)} has been called, then the supplied
+     * APIContextFactory is responsible for creating an OpenGL ES 2.0-compatible context.
      * If
-     * {@link #setEGLConfigChooser(EGLConfigChooser)} has been called, then the supplied
-     * EGLConfigChooser is responsible for choosing an OpenGL ES 2.0-compatible config.
-     * @param version The EGLContext client version to choose. Use 2 for OpenGL ES 2.0
+     * {@link #setAPIConfigChooser(APIConfigChooser)} has been called, then the supplied
+     * APIConfigChooser is responsible for choosing an OpenGL ES 2.0-compatible config.
+     * @param version The APIContext client version to choose. Use 2 for OpenGL ES 2.0
      */
-    public void setEGLContextClientVersion(int version) {
+    public void setAPIContextClientVersion(int version) {
         checkRenderThreadState();
-        mEGLContextClientVersion = version;
+        mAPIContextClientVersion = version;
     }
 
     /**
@@ -566,8 +566,8 @@ public class NativeSurfaceView extends SurfaceView implements SurfaceHolder.Call
 
 
     /**
-     * Pause the rendering thread, optionally tearing down the EGL context
-     * depending upon the value of {@link #setPreserveEGLContextOnPause(boolean)}.
+     * Pause the rendering thread, optionally tearing down the API context
+     * depending upon the value of {@link #setPreserveAPIContextOnPause(boolean)}.
      *
      * This method should be called when it is no longer desirable for the
      * NativeSurfaceView to continue rendering, such as in response to
@@ -694,13 +694,13 @@ public class NativeSurfaceView extends SurfaceView implements SurfaceHolder.Call
      * standard Java techniques for cross-thread communication, or they can
      * use the {@link NativeSurfaceView#queueEvent(Runnable)} convenience method.
      * <p>
-     * <h3>EGL Context Lost</h3>
-     * There are situations where the EGL rendering context will be lost. This
+     * <h3>API Context Lost</h3>
+     * There are situations where the API rendering context will be lost. This
      * typically happens when device wakes up after going to sleep. When
-     * the EGL context is lost, all OpenGL resources (such as textures) that are
+     * the API context is lost, all OpenGL resources (such as textures) that are
      * associated with that context will be automatically deleted. In order to
      * keep rendering correctly, a renderer must recreate any lost resources
-     * that it still needs. The {@link #onSurfaceCreated(GL10, EGLConfig)} method
+     * that it still needs. The {@link #onSurfaceCreated(GL10, APIConfig)} method
      * is a convenient place to do this.
      *
      *
@@ -711,27 +711,27 @@ public class NativeSurfaceView extends SurfaceView implements SurfaceHolder.Call
          * Called when the surface is created or recreated.
          * <p>
          * Called when the rendering thread
-         * starts and whenever the EGL context is lost. The EGL context will typically
+         * starts and whenever the API context is lost. The API context will typically
          * be lost when the Android device awakes after going to sleep.
          * <p>
          * Since this method is called at the beginning of rendering, as well as
-         * every time the EGL context is lost, this method is a convenient place to put
+         * every time the API context is lost, this method is a convenient place to put
          * code to create resources that need to be created when the rendering
-         * starts, and that need to be recreated when the EGL context is lost.
+         * starts, and that need to be recreated when the API context is lost.
          * Textures are an example of a resource that you might want to create
          * here.
          * <p>
-         * Note that when the EGL context is lost, all OpenGL resources associated
+         * Note that when the API context is lost, all OpenGL resources associated
          * with that context will be automatically deleted. You do not need to call
          * the corresponding "glDelete" methods such as glDeleteTextures to
          * manually delete these lost resources.
          * <p>
          * @param gl the GL interface. Use <code>instanceof</code> to
          * test if the interface supports GL11 or higher interfaces.
-         * @param config the EGLConfig of the created surface. Can be used
+         * @param config the APIConfig of the created surface. Can be used
          * to create matching pbuffers.
          */
-        void onSurfaceCreated(GL10 gl, EGLConfig config);
+        void onSurfaceCreated(GL10 gl, APIConfig config);
 
         /**
          * Called when the surface changed size.
@@ -777,61 +777,61 @@ public class NativeSurfaceView extends SurfaceView implements SurfaceHolder.Call
     }
 
     /**
-     * An interface for customizing the eglCreateContext and eglDestroyContext calls.
+     * An interface for customizing the APICreateContext and APIDestroyContext calls.
      * <p>
      * This interface must be implemented by clients wishing to call
-     * {@link NativeSurfaceView#setEGLContextFactory(EGLContextFactory)}
+     * {@link NativeSurfaceView#setAPIContextFactory(APIContextFactory)}
      */
-    public interface EGLContextFactory {
-        EGLContext createContext(EGL10 egl, EGLDisplay display, EGLConfig eglConfig);
-        void destroyContext(EGL10 egl, EGLDisplay display, EGLContext context);
+    public interface APIContextFactory {
+        APIContext createContext(API10 API, APIDisplay display, APIConfig APIConfig);
+        void destroyContext(API10 API, APIDisplay display, APIContext context);
     }
 
-    private class DefaultContextFactory implements EGLContextFactory {
-        private int EGL_CONTEXT_CLIENT_VERSION = 0x3098;
+    private class DefaultContextFactory implements APIContextFactory {
+        private int API_CONTEXT_CLIENT_VERSION = 0x3098;
 
-        public EGLContext createContext(EGL10 egl, EGLDisplay display, EGLConfig config) {
-            int[] attrib_list = {EGL_CONTEXT_CLIENT_VERSION, mEGLContextClientVersion,
-                    EGL10.EGL_NONE };
+        public APIContext createContext(API10 API, APIDisplay display, APIConfig config) {
+            int[] attrib_list = {API_CONTEXT_CLIENT_VERSION, mAPIContextClientVersion,
+                    API10.API_NONE };
 
-            return egl.eglCreateContext(display, config, EGL10.EGL_NO_CONTEXT,
-                    mEGLContextClientVersion != 0 ? attrib_list : null);
+            return API.APICreateContext(display, config, API10.API_NO_CONTEXT,
+                    mAPIContextClientVersion != 0 ? attrib_list : null);
         }
 
-        public void destroyContext(EGL10 egl, EGLDisplay display,
-                EGLContext context) {
-            if (!egl.eglDestroyContext(display, context)) {
+        public void destroyContext(API10 API, APIDisplay display,
+                APIContext context) {
+            if (!API.APIDestroyContext(display, context)) {
                 Log.e("DefaultContextFactory", "display:" + display + " context: " + context);
                 if (LOG_THREADS) {
                     Log.i("DefaultContextFactory", "tid=" + Thread.currentThread().getId());
                 }
-                EglHelper.throwEglException("eglDestroyContex", egl.eglGetError());
+                APIHelper.throwAPIException("APIDestroyContex", API.APIGetError());
             }
         }
     }
 
     /**
-     * An interface for customizing the eglCreateWindowSurface and eglDestroySurface calls.
+     * An interface for customizing the APICreateWindowSurface and APIDestroySurface calls.
      * <p>
      * This interface must be implemented by clients wishing to call
-     * {@link NativeSurfaceView#setEGLWindowSurfaceFactory(EGLWindowSurfaceFactory)}
+     * {@link NativeSurfaceView#setAPIWindowSurfaceFactory(APIWindowSurfaceFactory)}
      */
-    public interface EGLWindowSurfaceFactory {
+    public interface APIWindowSurfaceFactory {
         /**
          *  @return null if the surface cannot be constructed.
          */
-        EGLSurface createWindowSurface(EGL10 egl, EGLDisplay display, EGLConfig config,
+        APISurface createWindowSurface(API10 API, APIDisplay display, APIConfig config,
                 Object nativeWindow);
-        void destroySurface(EGL10 egl, EGLDisplay display, EGLSurface surface);
+        void destroySurface(API10 API, APIDisplay display, APISurface surface);
     }
 
-    private static class DefaultWindowSurfaceFactory implements EGLWindowSurfaceFactory {
+    private static class DefaultWindowSurfaceFactory implements APIWindowSurfaceFactory {
 
-        public EGLSurface createWindowSurface(EGL10 egl, EGLDisplay display,
-                EGLConfig config, Object nativeWindow) {
-            EGLSurface result = null;
+        public APISurface createWindowSurface(API10 API, APIDisplay display,
+                APIConfig config, Object nativeWindow) {
+            APISurface result = null;
             try {
-                result = egl.eglCreateWindowSurface(display, config, nativeWindow, null);
+                result = API.APICreateWindowSurface(display, config, nativeWindow, null);
             } catch (IllegalArgumentException e) {
                 // This exception indicates that the surface flinger surface
                 // is not valid. This can happen if the surface flinger surface has
@@ -839,48 +839,48 @@ public class NativeSurfaceView extends SurfaceView implements SurfaceHolder.Call
                 // notified via SurfaceHolder.Callback.surfaceDestroyed.
                 // In theory the application should be notified first,
                 // but in practice sometimes it is not. See b/4588890
-                Log.e(TAG, "eglCreateWindowSurface", e);
+                Log.e(TAG, "APICreateWindowSurface", e);
             }
             return result;
         }
 
-        public void destroySurface(EGL10 egl, EGLDisplay display,
-                EGLSurface surface) {
-            egl.eglDestroySurface(display, surface);
+        public void destroySurface(API10 API, APIDisplay display,
+                APISurface surface) {
+            API.APIDestroySurface(display, surface);
         }
     }
 
     /**
-     * An interface for choosing an EGLConfig configuration from a list of
+     * An interface for choosing an APIConfig configuration from a list of
      * potential configurations.
      * <p>
      * This interface must be implemented by clients wishing to call
-     * {@link NativeSurfaceView#setEGLConfigChooser(EGLConfigChooser)}
+     * {@link NativeSurfaceView#setAPIConfigChooser(APIConfigChooser)}
      */
-    public interface EGLConfigChooser {
+    public interface APIConfigChooser {
         /**
          * Choose a configuration from the list. Implementors typically
          * implement this method by calling
-         * {@link EGL10#eglChooseConfig} and iterating through the results. Please consult the
-         * EGL specification available from The Khronos Group to learn how to call eglChooseConfig.
-         * @param egl the EGL10 for the current display.
+         * {@link API10#APIChooseConfig} and iterating through the results. Please consult the
+         * API specification available from The Khronos Group to learn how to call APIChooseConfig.
+         * @param API the API10 for the current display.
          * @param display the current display.
          * @return the chosen configuration.
          */
-        EGLConfig chooseConfig(EGL10 egl, EGLDisplay display);
+        APIConfig chooseConfig(API10 API, APIDisplay display);
     }
 
     private abstract class BaseConfigChooser
-            implements EGLConfigChooser {
+            implements APIConfigChooser {
         public BaseConfigChooser(int[] configSpec) {
             mConfigSpec = filterConfigSpec(configSpec);
         }
 
-        public EGLConfig chooseConfig(EGL10 egl, EGLDisplay display) {
+        public APIConfig chooseConfig(API10 API, APIDisplay display) {
             int[] num_config = new int[1];
-            if (!egl.eglChooseConfig(display, mConfigSpec, null, 0,
+            if (!API.APIChooseConfig(display, mConfigSpec, null, 0,
                     num_config)) {
-                throw new IllegalArgumentException("eglChooseConfig failed");
+                throw new IllegalArgumentException("APIChooseConfig failed");
             }
 
             int numConfigs = num_config[0];
@@ -890,40 +890,40 @@ public class NativeSurfaceView extends SurfaceView implements SurfaceHolder.Call
                         "No configs match configSpec");
             }
 
-            EGLConfig[] configs = new EGLConfig[numConfigs];
-            if (!egl.eglChooseConfig(display, mConfigSpec, configs, numConfigs,
+            APIConfig[] configs = new APIConfig[numConfigs];
+            if (!API.APIChooseConfig(display, mConfigSpec, configs, numConfigs,
                     num_config)) {
-                throw new IllegalArgumentException("eglChooseConfig#2 failed");
+                throw new IllegalArgumentException("APIChooseConfig#2 failed");
             }
-            EGLConfig config = chooseConfig(egl, display, configs);
+            APIConfig config = chooseConfig(API, display, configs);
             if (config == null) {
                 throw new IllegalArgumentException("No config chosen");
             }
             return config;
         }
 
-        abstract EGLConfig chooseConfig(EGL10 egl, EGLDisplay display,
-                EGLConfig[] configs);
+        abstract APIConfig chooseConfig(API10 API, APIDisplay display,
+                APIConfig[] configs);
 
         protected int[] mConfigSpec;
 
         private int[] filterConfigSpec(int[] configSpec) {
-            if (mEGLContextClientVersion != 2 && mEGLContextClientVersion != 3) {
+            if (mAPIContextClientVersion != 2 && mAPIContextClientVersion != 3) {
                 return configSpec;
             }
-            /* We know none of the subclasses define EGL_RENDERABLE_TYPE.
+            /* We know none of the subclasses define API_RENDERABLE_TYPE.
              * And we know the configSpec is well formed.
              */
             int len = configSpec.length;
             int[] newConfigSpec = new int[len + 2];
             System.arraycopy(configSpec, 0, newConfigSpec, 0, len-1);
-            newConfigSpec[len-1] = EGL10.EGL_RENDERABLE_TYPE;
-            if (mEGLContextClientVersion == 2) {
-                newConfigSpec[len] = EGL14.EGL_OPENGL_ES2_BIT;  /* EGL_OPENGL_ES2_BIT */
+            newConfigSpec[len-1] = API10.API_RENDERABLE_TYPE;
+            if (mAPIContextClientVersion == 2) {
+                newConfigSpec[len] = API14.API_OPENGL_ES2_BIT;  /* API_OPENGL_ES2_BIT */
             } else {
-                newConfigSpec[len] = EGLExt.EGL_OPENGL_ES3_BIT_KHR; /* EGL_OPENGL_ES3_BIT_KHR */
+                newConfigSpec[len] = APIExt.API_OPENGL_ES3_BIT_KHR; /* API_OPENGL_ES3_BIT_KHR */
             }
-            newConfigSpec[len+1] = EGL10.EGL_NONE;
+            newConfigSpec[len+1] = API10.API_NONE;
             return newConfigSpec;
         }
     }
@@ -936,13 +936,13 @@ public class NativeSurfaceView extends SurfaceView implements SurfaceHolder.Call
         public ComponentSizeChooser(int redSize, int greenSize, int blueSize,
                 int alphaSize, int depthSize, int stencilSize) {
             super(new int[] {
-                    EGL10.EGL_RED_SIZE, redSize,
-                    EGL10.EGL_GREEN_SIZE, greenSize,
-                    EGL10.EGL_BLUE_SIZE, blueSize,
-                    EGL10.EGL_ALPHA_SIZE, alphaSize,
-                    EGL10.EGL_DEPTH_SIZE, depthSize,
-                    EGL10.EGL_STENCIL_SIZE, stencilSize,
-                    EGL10.EGL_NONE});
+                    API10.API_RED_SIZE, redSize,
+                    API10.API_GREEN_SIZE, greenSize,
+                    API10.API_BLUE_SIZE, blueSize,
+                    API10.API_ALPHA_SIZE, alphaSize,
+                    API10.API_DEPTH_SIZE, depthSize,
+                    API10.API_STENCIL_SIZE, stencilSize,
+                    API10.API_NONE});
             mValue = new int[1];
             mRedSize = redSize;
             mGreenSize = greenSize;
@@ -953,22 +953,22 @@ public class NativeSurfaceView extends SurfaceView implements SurfaceHolder.Call
        }
 
         @Override
-        public EGLConfig chooseConfig(EGL10 egl, EGLDisplay display,
-                EGLConfig[] configs) {
-            for (EGLConfig config : configs) {
-                int d = findConfigAttrib(egl, display, config,
-                        EGL10.EGL_DEPTH_SIZE, 0);
-                int s = findConfigAttrib(egl, display, config,
-                        EGL10.EGL_STENCIL_SIZE, 0);
+        public APIConfig chooseConfig(API10 API, APIDisplay display,
+                APIConfig[] configs) {
+            for (APIConfig config : configs) {
+                int d = findConfigAttrib(API, display, config,
+                        API10.API_DEPTH_SIZE, 0);
+                int s = findConfigAttrib(API, display, config,
+                        API10.API_STENCIL_SIZE, 0);
                 if ((d >= mDepthSize) && (s >= mStencilSize)) {
-                    int r = findConfigAttrib(egl, display, config,
-                            EGL10.EGL_RED_SIZE, 0);
-                    int g = findConfigAttrib(egl, display, config,
-                             EGL10.EGL_GREEN_SIZE, 0);
-                    int b = findConfigAttrib(egl, display, config,
-                              EGL10.EGL_BLUE_SIZE, 0);
-                    int a = findConfigAttrib(egl, display, config,
-                            EGL10.EGL_ALPHA_SIZE, 0);
+                    int r = findConfigAttrib(API, display, config,
+                            API10.API_RED_SIZE, 0);
+                    int g = findConfigAttrib(API, display, config,
+                             API10.API_GREEN_SIZE, 0);
+                    int b = findConfigAttrib(API, display, config,
+                              API10.API_BLUE_SIZE, 0);
+                    int a = findConfigAttrib(API, display, config,
+                            API10.API_ALPHA_SIZE, 0);
                     if ((r == mRedSize) && (g == mGreenSize)
                             && (b == mBlueSize) && (a == mAlphaSize)) {
                         return config;
@@ -978,10 +978,10 @@ public class NativeSurfaceView extends SurfaceView implements SurfaceHolder.Call
             return null;
         }
 
-        private int findConfigAttrib(EGL10 egl, EGLDisplay display,
-                EGLConfig config, int attribute, int defaultValue) {
+        private int findConfigAttrib(API10 API, APIDisplay display,
+                APIConfig config, int attribute, int defaultValue) {
 
-            if (egl.eglGetConfigAttrib(display, config, attribute, mValue)) {
+            if (API.APIGetConfigAttrib(display, config, attribute, mValue)) {
                 return mValue[0];
             }
             return defaultValue;
@@ -1002,95 +1002,95 @@ public class NativeSurfaceView extends SurfaceView implements SurfaceHolder.Call
      * or without a depth buffer.
      *
      */
-    private class SimpleEGLConfigChooser extends ComponentSizeChooser {
-        public SimpleEGLConfigChooser(boolean withDepthBuffer) {
+    private class SimpleAPIConfigChooser extends ComponentSizeChooser {
+        public SimpleAPIConfigChooser(boolean withDepthBuffer) {
             super(8, 8, 8, 0, withDepthBuffer ? 16 : 0, 0);
         }
     }
 
     /**
-     * An EGL helper class.
+     * An API helper class.
      */
 
-    private static class EglHelper {
-        public EglHelper(WeakReference<NativeSurfaceView> NativeSurfaceViewWeakRef) {
+    private static class APIHelper {
+        public APIHelper(WeakReference<NativeSurfaceView> NativeSurfaceViewWeakRef) {
             mNativeSurfaceViewWeakRef = NativeSurfaceViewWeakRef;
         }
 
         /**
-         * Initialize EGL for a given configuration spec.
+         * Initialize API for a given configuration spec.
          * @param configSpec
          */
         public void start() {
-            if (LOG_EGL) {
-                Log.w("EglHelper", "start() tid=" + Thread.currentThread().getId());
+            if (LOG_API) {
+                Log.w("APIHelper", "start() tid=" + Thread.currentThread().getId());
             }
             /*
-             * Get an EGL instance
+             * Get an API instance
              */
-            mEgl = (EGL10) EGLContext.getEGL();
+            mAPI = (API10) APIContext.getAPI();
 
             /*
              * Get to the default display.
              */
-            mEglDisplay = mEgl.eglGetDisplay(EGL10.EGL_DEFAULT_DISPLAY);
+            mAPIDisplay = mAPI.APIGetDisplay(API10.API_DEFAULT_DISPLAY);
 
-            if (mEglDisplay == EGL10.EGL_NO_DISPLAY) {
-                throw new RuntimeException("eglGetDisplay failed");
+            if (mAPIDisplay == API10.API_NO_DISPLAY) {
+                throw new RuntimeException("APIGetDisplay failed");
             }
 
             /*
-             * We can now initialize EGL for that display
+             * We can now initialize API for that display
              */
             int[] version = new int[2];
-            if(!mEgl.eglInitialize(mEglDisplay, version)) {
-                throw new RuntimeException("eglInitialize failed");
+            if(!mAPI.APIInitialize(mAPIDisplay, version)) {
+                throw new RuntimeException("APIInitialize failed");
             }
             NativeSurfaceView view = mNativeSurfaceViewWeakRef.get();
             if (view == null) {
-                mEglConfig = null;
-                mEglContext = null;
+                mAPIConfig = null;
+                mAPIContext = null;
             } else {
-                mEglConfig = view.mEGLConfigChooser.chooseConfig(mEgl, mEglDisplay);
+                mAPIConfig = view.mAPIConfigChooser.chooseConfig(mAPI, mAPIDisplay);
 
                 /*
-                * Create an EGL context. We want to do this as rarely as we can, because an
-                * EGL context is a somewhat heavy object.
+                * Create an API context. We want to do this as rarely as we can, because an
+                * API context is a somewhat heavy object.
                 */
-                mEglContext = view.mEGLContextFactory.createContext(mEgl, mEglDisplay, mEglConfig);
+                mAPIContext = view.mAPIContextFactory.createContext(mAPI, mAPIDisplay, mAPIConfig);
             }
-            if (mEglContext == null || mEglContext == EGL10.EGL_NO_CONTEXT) {
-                mEglContext = null;
-                throwEglException("createContext");
+            if (mAPIContext == null || mAPIContext == API10.API_NO_CONTEXT) {
+                mAPIContext = null;
+                throwAPIException("createContext");
             }
-            if (LOG_EGL) {
-                Log.w("EglHelper", "createContext " + mEglContext + " tid=" + Thread.currentThread().getId());
+            if (LOG_API) {
+                Log.w("APIHelper", "createContext " + mAPIContext + " tid=" + Thread.currentThread().getId());
             }
 
-            mEglSurface = null;
+            mAPISurface = null;
         }
 
         /**
-         * Create an egl surface for the current SurfaceHolder surface. If a surface
+         * Create an API surface for the current SurfaceHolder surface. If a surface
          * already exists, destroy it before creating the new surface.
          *
          * @return true if the surface was created successfully.
          */
         public boolean createSurface() {
-            if (LOG_EGL) {
-                Log.w("EglHelper", "createSurface()  tid=" + Thread.currentThread().getId());
+            if (LOG_API) {
+                Log.w("APIHelper", "createSurface()  tid=" + Thread.currentThread().getId());
             }
             /*
              * Check preconditions.
              */
-            if (mEgl == null) {
-                throw new RuntimeException("egl not initialized");
+            if (mAPI == null) {
+                throw new RuntimeException("API not initialized");
             }
-            if (mEglDisplay == null) {
-                throw new RuntimeException("eglDisplay not initialized");
+            if (mAPIDisplay == null) {
+                throw new RuntimeException("APIDisplay not initialized");
             }
-            if (mEglConfig == null) {
-                throw new RuntimeException("mEglConfig not initialized");
+            if (mAPIConfig == null) {
+                throw new RuntimeException("mAPIConfig not initialized");
             }
 
             /*
@@ -1100,20 +1100,20 @@ public class NativeSurfaceView extends SurfaceView implements SurfaceHolder.Call
             destroySurfaceImp();
 
             /*
-             * Create an EGL surface we can render into.
+             * Create an API surface we can render into.
              */
             NativeSurfaceView view = mNativeSurfaceViewWeakRef.get();
             if (view != null) {
-                mEglSurface = view.mEGLWindowSurfaceFactory.createWindowSurface(mEgl,
-                        mEglDisplay, mEglConfig, view.getHolder());
+                mAPISurface = view.mAPIWindowSurfaceFactory.createWindowSurface(mAPI,
+                        mAPIDisplay, mAPIConfig, view.getHolder());
             } else {
-                mEglSurface = null;
+                mAPISurface = null;
             }
 
-            if (mEglSurface == null || mEglSurface == EGL10.EGL_NO_SURFACE) {
-                int error = mEgl.eglGetError();
-                if (error == EGL10.EGL_BAD_NATIVE_WINDOW) {
-                    Log.e("EglHelper", "createWindowSurface returned EGL_BAD_NATIVE_WINDOW.");
+            if (mAPISurface == null || mAPISurface == API10.API_NO_SURFACE) {
+                int error = mAPI.APIGetError();
+                if (error == API10.API_BAD_NATIVE_WINDOW) {
+                    Log.e("APIHelper", "createWindowSurface returned API_BAD_NATIVE_WINDOW.");
                 }
                 return false;
             }
@@ -1122,12 +1122,12 @@ public class NativeSurfaceView extends SurfaceView implements SurfaceHolder.Call
              * Before we can issue GL commands, we need to make sure
              * the context is current and bound to a surface.
              */
-            if (!mEgl.eglMakeCurrent(mEglDisplay, mEglSurface, mEglSurface, mEglContext)) {
+            if (!mAPI.APIMakeCurrent(mAPIDisplay, mAPISurface, mAPISurface, mAPIContext)) {
                 /*
                  * Could not make the context current, probably because the underlying
                  * SurfaceView surface has been destroyed.
                  */
-                logEglErrorAsWarning("EGLHelper", "eglMakeCurrent", mEgl.eglGetError());
+                logAPIErrorAsWarning("APIHelper", "APIMakeCurrent", mAPI.APIGetError());
                 return false;
             }
 
@@ -1135,12 +1135,12 @@ public class NativeSurfaceView extends SurfaceView implements SurfaceHolder.Call
         }
 
         /**
-         * Create a GL object for the current EGL context.
+         * Create a GL object for the current API context.
          * @return
          */
-        GL createGL() {
+        GL creatAPI() {
 
-            GL gl = mEglContext.getGL();
+            GL gl = mAPIContext.getGL();
             NativeSurfaceView view = mNativeSurfaceViewWeakRef.get();
             if (view != null) {
                 if (view.mGLWrapper != null) {
@@ -1164,85 +1164,85 @@ public class NativeSurfaceView extends SurfaceView implements SurfaceHolder.Call
 
         /**
          * Display the current render surface.
-         * @return the EGL error code from eglSwapBuffers.
+         * @return the API error code from APISwapBuffers.
          */
         public int swap() {
-            if (! mEgl.eglSwapBuffers(mEglDisplay, mEglSurface)) {
-                return mEgl.eglGetError();
+            if (! mAPI.APISwapBuffers(mAPIDisplay, mAPISurface)) {
+                return mAPI.APIGetError();
             }
-            return EGL10.EGL_SUCCESS;
+            return API10.API_SUCCESS;
         }
 
         public void destroySurface() {
-            if (LOG_EGL) {
-                Log.w("EglHelper", "destroySurface()  tid=" + Thread.currentThread().getId());
+            if (LOG_API) {
+                Log.w("APIHelper", "destroySurface()  tid=" + Thread.currentThread().getId());
             }
             destroySurfaceImp();
         }
 
         private void destroySurfaceImp() {
-            if (mEglSurface != null && mEglSurface != EGL10.EGL_NO_SURFACE) {
-                mEgl.eglMakeCurrent(mEglDisplay, EGL10.EGL_NO_SURFACE,
-                        EGL10.EGL_NO_SURFACE,
-                        EGL10.EGL_NO_CONTEXT);
+            if (mAPISurface != null && mAPISurface != API10.API_NO_SURFACE) {
+                mAPI.APIMakeCurrent(mAPIDisplay, API10.API_NO_SURFACE,
+                        API10.API_NO_SURFACE,
+                        API10.API_NO_CONTEXT);
                 NativeSurfaceView view = mNativeSurfaceViewWeakRef.get();
                 if (view != null) {
-                    view.mEGLWindowSurfaceFactory.destroySurface(mEgl, mEglDisplay, mEglSurface);
+                    view.mAPIWindowSurfaceFactory.destroySurface(mAPI, mAPIDisplay, mAPISurface);
                 }
-                mEglSurface = null;
+                mAPISurface = null;
             }
         }
 
         public void finish() {
-            if (LOG_EGL) {
-                Log.w("EglHelper", "finish() tid=" + Thread.currentThread().getId());
+            if (LOG_API) {
+                Log.w("APIHelper", "finish() tid=" + Thread.currentThread().getId());
             }
-            if (mEglContext != null) {
+            if (mAPIContext != null) {
                 NativeSurfaceView view = mNativeSurfaceViewWeakRef.get();
                 if (view != null) {
-                    view.mEGLContextFactory.destroyContext(mEgl, mEglDisplay, mEglContext);
+                    view.mAPIContextFactory.destroyContext(mAPI, mAPIDisplay, mAPIContext);
                 }
-                mEglContext = null;
+                mAPIContext = null;
             }
-            if (mEglDisplay != null) {
-                mEgl.eglTerminate(mEglDisplay);
-                mEglDisplay = null;
+            if (mAPIDisplay != null) {
+                mAPI.APITerminate(mAPIDisplay);
+                mAPIDisplay = null;
             }
         }
 
-        private void throwEglException(String function) {
-            throwEglException(function, mEgl.eglGetError());
+        private void throwAPIException(String function) {
+            throwAPIException(function, mAPI.APIGetError());
         }
 
-        public static void throwEglException(String function, int error) {
-            String message = formatEglError(function, error);
+        public static void throwAPIException(String function, int error) {
+            String message = formatAPIError(function, error);
             if (LOG_THREADS) {
-                Log.e("EglHelper", "throwEglException tid=" + Thread.currentThread().getId() + " "
+                Log.e("APIHelper", "throwAPIException tid=" + Thread.currentThread().getId() + " "
                         + message);
             }
             throw new RuntimeException(message);
         }
 
-        public static void logEglErrorAsWarning(String tag, String function, int error) {
-            Log.w(tag, formatEglError(function, error));
+        public static void logAPIErrorAsWarning(String tag, String function, int error) {
+            Log.w(tag, formatAPIError(function, error));
         }
 
-        public static String formatEglError(String function, int error) {
-            return function + " failed: " + EGLLogWrapper.getErrorString(error);
+        public static String formatAPIError(String function, int error) {
+            return function + " failed: " + APILogWrapper.getErrorString(error);
         }
 
         private WeakReference<NativeSurfaceView> mNativeSurfaceViewWeakRef;
-        EGL10 mEgl;
-        EGLDisplay mEglDisplay;
-        EGLSurface mEglSurface;
-        EGLConfig mEglConfig;
+        API10 mAPI;
+        APIDisplay mAPIDisplay;
+        APISurface mAPISurface;
+        APIConfig mAPIConfig;
         @UnsupportedAppUsage
-        EGLContext mEglContext;
+        APIContext mAPIContext;
 
     }
 
     /**
-     * A generic GL Thread. Takes care of initializing EGL and GL. Delegates
+     * A generic GL Thread. Takes care of initializing API and GL. Delegates
      * to a Renderer instance to do the actual drawing. Can be configured to
      * render continuously or on request.
      *
@@ -1281,10 +1281,10 @@ public class NativeSurfaceView extends SurfaceView implements SurfaceHolder.Call
          * This private method should only be called inside a
          * synchronized(sRenderThreadManager) block.
          */
-        private void stopEglSurfaceLocked() {
-            if (mHaveEglSurface) {
-                mHaveEglSurface = false;
-                mEglHelper.destroySurface();
+        private void stopAPISurfaceLocked() {
+            if (mHaveAPISurface) {
+                mHaveAPISurface = false;
+                mAPIHelper.destroySurface();
             }
         }
 
@@ -1292,29 +1292,29 @@ public class NativeSurfaceView extends SurfaceView implements SurfaceHolder.Call
          * This private method should only be called inside a
          * synchronized(sRenderThreadManager) block.
          */
-        private void stopEglContextLocked() {
-            if (mHaveEglContext) {
-                mEglHelper.finish();
-                mHaveEglContext = false;
-                sRenderThreadManager.releaseEglContextLocked(this);
+        private void stopAPIContextLocked() {
+            if (mHaveAPIContext) {
+                mAPIHelper.finish();
+                mHaveAPIContext = false;
+                sRenderThreadManager.releaseAPIContextLocked(this);
             }
         }
         private void guardedRun() throws InterruptedException {
-            mEglHelper = new EglHelper(mNativeSurfaceViewWeakRef);
-            mHaveEglContext = false;
-            mHaveEglSurface = false;
+            mAPIHelper = new APIHelper(mNativeSurfaceViewWeakRef);
+            mHaveAPIContext = false;
+            mHaveAPISurface = false;
             mWantRenderNotification = false;
 
             try {
                 GL10 gl = null;
-                boolean createEglContext = false;
-                boolean createEglSurface = false;
-                boolean createGlInterface = false;
-                boolean lostEglContext = false;
+                boolean createAPIContext = false;
+                boolean createAPISurface = false;
+                boolean creatAPIInterface = false;
+                boolean lostAPIContext = false;
                 boolean sizeChanged = false;
                 boolean wantRenderNotification = false;
                 boolean doRenderNotification = false;
-                boolean askedToReleaseEglContext = false;
+                boolean askedToReleaseAPIContext = false;
                 int w = 0;
                 int h = 0;
                 Runnable event = null;
@@ -1343,41 +1343,41 @@ public class NativeSurfaceView extends SurfaceView implements SurfaceHolder.Call
                                 }
                             }
 
-                            // Do we need to give up the EGL context?
-                            if (mShouldReleaseEglContext) {
+                            // Do we need to give up the API context?
+                            if (mShouldReleaseAPIContext) {
                                 if (LOG_SURFACE) {
-                                    Log.i("RenderThread", "releasing EGL context because asked to tid=" + getId());
+                                    Log.i("RenderThread", "releasing API context because asked to tid=" + getId());
                                 }
-                                stopEglSurfaceLocked();
-                                stopEglContextLocked();
-                                mShouldReleaseEglContext = false;
-                                askedToReleaseEglContext = true;
+                                stopAPISurfaceLocked();
+                                stopAPIContextLocked();
+                                mShouldReleaseAPIContext = false;
+                                askedToReleaseAPIContext = true;
                             }
 
-                            // Have we lost the EGL context?
-                            if (lostEglContext) {
-                                stopEglSurfaceLocked();
-                                stopEglContextLocked();
-                                lostEglContext = false;
+                            // Have we lost the API context?
+                            if (lostAPIContext) {
+                                stopAPISurfaceLocked();
+                                stopAPIContextLocked();
+                                lostAPIContext = false;
                             }
 
-                            // When pausing, release the EGL surface:
-                            if (pausing && mHaveEglSurface) {
+                            // When pausing, release the API surface:
+                            if (pausing && mHaveAPISurface) {
                                 if (LOG_SURFACE) {
-                                    Log.i("RenderThread", "releasing EGL surface because paused tid=" + getId());
+                                    Log.i("RenderThread", "releasing API surface because paused tid=" + getId());
                                 }
-                                stopEglSurfaceLocked();
+                                stopAPISurfaceLocked();
                             }
 
-                            // When pausing, optionally release the EGL Context:
-                            if (pausing && mHaveEglContext) {
+                            // When pausing, optionally release the API Context:
+                            if (pausing && mHaveAPIContext) {
                                 NativeSurfaceView view = mNativeSurfaceViewWeakRef.get();
-                                boolean preserveEglContextOnPause = view == null ?
-                                        false : view.mPreserveEGLContextOnPause;
-                                if (!preserveEglContextOnPause) {
-                                    stopEglContextLocked();
+                                boolean preserveAPIContextOnPause = view == null ?
+                                        false : view.mPreserveAPIContextOnPause;
+                                if (!preserveAPIContextOnPause) {
+                                    stopAPIContextLocked();
                                     if (LOG_SURFACE) {
-                                        Log.i("RenderThread", "releasing EGL context because paused tid=" + getId());
+                                        Log.i("RenderThread", "releasing API context because paused tid=" + getId());
                                     }
                                 }
                             }
@@ -1387,8 +1387,8 @@ public class NativeSurfaceView extends SurfaceView implements SurfaceHolder.Call
                                 if (LOG_SURFACE) {
                                     Log.i("RenderThread", "noticed surfaceView surface lost tid=" + getId());
                                 }
-                                if (mHaveEglSurface) {
-                                    stopEglSurfaceLocked();
+                                if (mHaveAPISurface) {
+                                    stopAPISurfaceLocked();
                                 }
                                 mWaitingForSurface = true;
                                 mSurfaceIsBad = false;
@@ -1422,32 +1422,32 @@ public class NativeSurfaceView extends SurfaceView implements SurfaceHolder.Call
                             // Ready to draw?
                             if (readyToDraw()) {
 
-                                // If we don't have an EGL context, try to acquire one.
-                                if (! mHaveEglContext) {
-                                    if (askedToReleaseEglContext) {
-                                        askedToReleaseEglContext = false;
+                                // If we don't have an API context, try to acquire one.
+                                if (! mHaveAPIContext) {
+                                    if (askedToReleaseAPIContext) {
+                                        askedToReleaseAPIContext = false;
                                     } else {
                                         try {
-                                            mEglHelper.start();
+                                            mAPIHelper.start();
                                         } catch (RuntimeException t) {
-                                            sRenderThreadManager.releaseEglContextLocked(this);
+                                            sRenderThreadManager.releaseAPIContextLocked(this);
                                             throw t;
                                         }
-                                        mHaveEglContext = true;
-                                        createEglContext = true;
+                                        mHaveAPIContext = true;
+                                        createAPIContext = true;
 
                                         sRenderThreadManager.notifyAll();
                                     }
                                 }
 
-                                if (mHaveEglContext && !mHaveEglSurface) {
-                                    mHaveEglSurface = true;
-                                    createEglSurface = true;
-                                    createGlInterface = true;
+                                if (mHaveAPIContext && !mHaveAPISurface) {
+                                    mHaveAPISurface = true;
+                                    createAPISurface = true;
+                                    creatAPIInterface = true;
                                     sizeChanged = true;
                                 }
 
-                                if (mHaveEglSurface) {
+                                if (mHaveAPISurface) {
                                     if (mSizeChanged) {
                                         sizeChanged = true;
                                         w = mWidth;
@@ -1459,8 +1459,8 @@ public class NativeSurfaceView extends SurfaceView implements SurfaceHolder.Call
                                                     + getId());
                                         }
 
-                                        // Destroy and recreate the EGL surface.
-                                        createEglSurface = true;
+                                        // Destroy and recreate the API surface.
+                                        createAPISurface = true;
 
                                         mSizeChanged = false;
                                     }
@@ -1482,9 +1482,9 @@ public class NativeSurfaceView extends SurfaceView implements SurfaceHolder.Call
                             // By design, this is the only place in a RenderThread thread where we wait().
                             if (LOG_THREADS) {
                                 Log.i("RenderThread", "waiting tid=" + getId()
-                                    + " mHaveEglContext: " + mHaveEglContext
-                                    + " mHaveEglSurface: " + mHaveEglSurface
-                                    + " mFinishedCreatingEglSurface: " + mFinishedCreatingEglSurface
+                                    + " mHaveAPIContext: " + mHaveAPIContext
+                                    + " mHaveAPISurface: " + mHaveAPISurface
+                                    + " mFinishedCreatingAPISurface: " + mFinishedCreatingAPISurface
                                     + " mPaused: " + mPaused
                                     + " mHasSurface: " + mHasSurface
                                     + " mSurfaceIsBad: " + mSurfaceIsBad
@@ -1504,33 +1504,33 @@ public class NativeSurfaceView extends SurfaceView implements SurfaceHolder.Call
                         continue;
                     }
 
-                    if (createEglSurface) {
+                    if (createAPISurface) {
                         if (LOG_SURFACE) {
-                            Log.w("RenderThread", "egl createSurface");
+                            Log.w("RenderThread", "API createSurface");
                         }
-                        if (mEglHelper.createSurface()) {
+                        if (mAPIHelper.createSurface()) {
                             synchronized(sRenderThreadManager) {
-                                mFinishedCreatingEglSurface = true;
+                                mFinishedCreatingAPISurface = true;
                                 sRenderThreadManager.notifyAll();
                             }
                         } else {
                             synchronized(sRenderThreadManager) {
-                                mFinishedCreatingEglSurface = true;
+                                mFinishedCreatingAPISurface = true;
                                 mSurfaceIsBad = true;
                                 sRenderThreadManager.notifyAll();
                             }
                             continue;
                         }
-                        createEglSurface = false;
+                        createAPISurface = false;
                     }
 
-                    if (createGlInterface) {
-                        gl = (GL10) mEglHelper.createGL();
+                    if (creatAPIInterface) {
+                        gl = (GL10) mAPIHelper.creatAPI();
 
-                        createGlInterface = false;
+                        creatAPIInterface = false;
                     }
 
-                    if (createEglContext) {
+                    if (createAPIContext) {
                         if (LOG_RENDERER) {
                             Log.w("RenderThread", "onSurfaceCreated");
                         }
@@ -1538,12 +1538,12 @@ public class NativeSurfaceView extends SurfaceView implements SurfaceHolder.Call
                         if (view != null) {
                             try {
                                 Trace.traceBegin(Trace.TRACE_TAG_VIEW, "onSurfaceCreated");
-                                view.mRenderer.onSurfaceCreated(gl, mEglHelper.mEglConfig);
+                                view.mRenderer.onSurfaceCreated(gl, mAPIHelper.mAPIConfig);
                             } finally {
                                 Trace.traceEnd(Trace.TRACE_TAG_VIEW);
                             }
                         }
-                        createEglContext = false;
+                        createAPIContext = false;
                     }
 
                     if (sizeChanged) {
@@ -1580,22 +1580,22 @@ public class NativeSurfaceView extends SurfaceView implements SurfaceHolder.Call
                             }
                         }
                     }
-                    int swapError = mEglHelper.swap();
+                    int swapError = mAPIHelper.swap();
                     switch (swapError) {
-                        case EGL10.EGL_SUCCESS:
+                        case API10.API_SUCCESS:
                             break;
-                        case EGL11.EGL_CONTEXT_LOST:
+                        case API11.API_CONTEXT_LOST:
                             if (LOG_SURFACE) {
-                                Log.i("RenderThread", "egl context lost tid=" + getId());
+                                Log.i("RenderThread", "API context lost tid=" + getId());
                             }
-                            lostEglContext = true;
+                            lostAPIContext = true;
                             break;
                         default:
                             // Other errors typically mean that the current surface is bad,
                             // probably because the SurfaceView surface has been destroyed,
                             // but we haven't been notified yet.
                             // Log the error to help developers understand why rendering stopped.
-                            EglHelper.logEglErrorAsWarning("RenderThread", "eglSwapBuffers", swapError);
+                            APIHelper.logAPIErrorAsWarning("RenderThread", "APISwapBuffers", swapError);
 
                             synchronized(sRenderThreadManager) {
                                 mSurfaceIsBad = true;
@@ -1615,14 +1615,14 @@ public class NativeSurfaceView extends SurfaceView implements SurfaceHolder.Call
                  * clean-up everything...
                  */
                 synchronized (sRenderThreadManager) {
-                    stopEglSurfaceLocked();
-                    stopEglContextLocked();
+                    stopAPISurfaceLocked();
+                    stopAPIContextLocked();
                 }
             }
         }
 
         public boolean ableToDraw() {
-            return mHaveEglContext && mHaveEglSurface && readyToDraw();
+            return mHaveAPIContext && mHaveAPISurface && readyToDraw();
         }
 
         private boolean readyToDraw() {
@@ -1679,10 +1679,10 @@ public class NativeSurfaceView extends SurfaceView implements SurfaceHolder.Call
                     Log.i("RenderThread", "surfaceCreated tid=" + getId());
                 }
                 mHasSurface = true;
-                mFinishedCreatingEglSurface = false;
+                mFinishedCreatingAPISurface = false;
                 sRenderThreadManager.notifyAll();
                 while (mWaitingForSurface
-                       && !mFinishedCreatingEglSurface
+                       && !mFinishedCreatingAPISurface
                        && !mExited) {
                     try {
                         sRenderThreadManager.wait();
@@ -1762,7 +1762,7 @@ public class NativeSurfaceView extends SurfaceView implements SurfaceHolder.Call
 
                 // If we are already on the GL thread, this means a client callback
                 // has caused reentrancy, for example via updating the SurfaceView parameters.
-                // We need to process the size change eventually though and update our EGLSurface.
+                // We need to process the size change eventually though and update our APISurface.
                 // So we set the parameters and return so they can be processed on our
                 // next iteration.
                 if (Thread.currentThread() == this) {
@@ -1802,8 +1802,8 @@ public class NativeSurfaceView extends SurfaceView implements SurfaceHolder.Call
             }
         }
 
-        public void requestReleaseEglContextLocked() {
-            mShouldReleaseEglContext = true;
+        public void requestReleaseAPIContextLocked() {
+            mShouldReleaseAPIContext = true;
             sRenderThreadManager.notifyAll();
         }
 
@@ -1830,10 +1830,10 @@ public class NativeSurfaceView extends SurfaceView implements SurfaceHolder.Call
         private boolean mHasSurface;
         private boolean mSurfaceIsBad;
         private boolean mWaitingForSurface;
-        private boolean mHaveEglContext;
-        private boolean mHaveEglSurface;
-        private boolean mFinishedCreatingEglSurface;
-        private boolean mShouldReleaseEglContext;
+        private boolean mHaveAPIContext;
+        private boolean mHaveAPISurface;
+        private boolean mFinishedCreatingAPISurface;
+        private boolean mShouldReleaseAPIContext;
         private int mWidth;
         private int mHeight;
         private int mRenderMode;
@@ -1847,7 +1847,7 @@ public class NativeSurfaceView extends SurfaceView implements SurfaceHolder.Call
         // End of member variables protected by the sRenderThreadManager monitor.
 
         @UnsupportedAppUsage
-        private EglHelper mEglHelper;
+        private APIHelper mAPIHelper;
 
         /**
          * Set once at thread construction time, nulled out when the parent view is garbage
@@ -1910,10 +1910,10 @@ public class NativeSurfaceView extends SurfaceView implements SurfaceHolder.Call
         }
 
         /*
-         * Releases the EGL context. Requires that we are already in the
+         * Releases the API context. Requires that we are already in the
          * sRenderThreadManager monitor when this is called.
          */
-        public void releaseEglContextLocked(RenderThread thread) {
+        public void releaseAPIContextLocked(RenderThread thread) {
             notifyAll();
         }
     }
@@ -1927,11 +1927,11 @@ public class NativeSurfaceView extends SurfaceView implements SurfaceHolder.Call
     @UnsupportedAppUsage
     private Renderer mRenderer;
     private boolean mDetached;
-    private EGLConfigChooser mEGLConfigChooser;
-    private EGLContextFactory mEGLContextFactory;
-    private EGLWindowSurfaceFactory mEGLWindowSurfaceFactory;
+    private APIConfigChooser mAPIConfigChooser;
+    private APIContextFactory mAPIContextFactory;
+    private APIWindowSurfaceFactory mAPIWindowSurfaceFactory;
     private GLWrapper mGLWrapper;
     private int mDebugFlags;
-    private int mEGLContextClientVersion;
-    private boolean mPreserveEGLContextOnPause;
+    private int mAPIContextClientVersion;
+    private boolean mPreserveAPIContextOnPause;
 }
